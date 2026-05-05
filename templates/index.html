@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MediAssist AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0c12; --surface: #12151f; --surface2: #1a1e2e;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --accent: #6c8fff; --accent2: #a78bfa; --green: #34d399; --red: #f87171;
+  --amber: #fbbf24; --text: #e8eaf2; --text2: #8b90a8; --text3: #3f4460;
+  --font: 'Sora', sans-serif; --mono: 'Space Mono', monospace;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+.screen {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateY(20px); overflow: hidden;
+}
+.screen.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+.screen.exit { opacity: 0; transform: translateY(-20px); }
+
+.blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.blob { position: absolute; border-radius: 50%; filter: blur(90px); animation: blobFloat 10s ease-in-out infinite; }
+.b1 { width: 500px; height: 500px; background: #6c8fff; opacity: 0.1; top: -150px; right: -100px; }
+.b2 { width: 350px; height: 350px; background: #a78bfa; opacity: 0.1; bottom: 50px; left: -80px; animation-delay: 3s; }
+.b3 { width: 250px; height: 250px; background: #34d399; opacity: 0.06; top: 40%; left: 40%; animation-delay: 6s; }
+@keyframes blobFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(15px,-20px) scale(1.05); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* SPLASH */
+#splash { z-index: 10; background: var(--bg); }
+.splash-logo {
+  width: 90px; height: 90px; border-radius: 28px;
+  background: linear-gradient(135deg, #1a2240, #2a3470);
+  border: 1px solid rgba(108,143,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px; box-shadow: 0 0 60px rgba(108,143,255,0.2);
+  animation: logoIn 0.8s ease 0.3s both;
+}
+@keyframes logoIn { from { opacity: 0; transform: scale(0.7) rotate(-10deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+.splash-title {
+  font-size: 38px; font-weight: 700; letter-spacing: -0.03em; text-align: center;
+  background: linear-gradient(135deg, #fff 30%, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: fadeUp 0.7s ease 0.6s both;
+}
+.splash-sub { font-size: 15px; color: var(--text2); margin-top: 10px; text-align: center; animation: fadeUp 0.7s ease 0.8s both; }
+.splash-bar { width: 200px; height: 3px; background: var(--surface2); border-radius: 2px; margin-top: 48px; overflow: hidden; animation: fadeUp 0.5s ease 1s both; }
+.splash-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; animation: barFill 2s ease 1.2s forwards; }
+@keyframes barFill { to { width: 100%; } }
+.splash-version { position: absolute; bottom: 30px; font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; animation: fadeUp 0.5s ease 1s both; }
+
+/* EMERGENCY */
+#emergency { z-index: 9; background: var(--bg); }
+.emergency-ring { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: 36px; }
+.ring { position: absolute; border-radius: 50%; border: 2px solid var(--red); animation: ringPulse 2s ease-out infinite; }
+.ring1 { width: 160px; height: 160px; animation-delay: 0s; }
+.ring2 { width: 120px; height: 120px; animation-delay: 0.4s; }
+.ring3 { width: 80px; height: 80px; animation-delay: 0.8s; }
+@keyframes ringPulse { 0% { transform: scale(0.9); opacity: 0.5; } 70% { transform: scale(1.15); opacity: 0; } 100% { transform: scale(0.9); opacity: 0; } }
+.emergency-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.4); display: flex; align-items: center; justify-content: center; z-index: 1; }
+.emergency-number {
+  font-size: 72px; font-weight: 700; font-family: var(--mono); color: var(--red); letter-spacing: -0.03em; line-height: 1;
+  animation: numPulse 1.5s ease-in-out infinite;
+}
+@keyframes numPulse { 0%,100% { text-shadow: 0 0 40px rgba(248,113,113,0.3); } 50% { text-shadow: 0 0 80px rgba(248,113,113,0.6); } }
+.emergency-label { font-size: 13px; color: var(--text2); margin-top: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
+.emergency-desc { font-size: 14px; color: var(--text2); margin-top: 20px; text-align: center; max-width: 320px; line-height: 1.75; }
+.emergency-desc strong { color: var(--red); }
+.skip-btn { margin-top: 40px; padding: 12px 32px; border-radius: 30px; background: transparent; border: 1px solid var(--border2); color: var(--text2); font-family: var(--font); font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.skip-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ABOUT */
+#about { z-index: 8; background: var(--bg); padding: 0 24px; overflow-y: auto; justify-content: flex-start; }
+.about-wrap { max-width: 700px; width: 100%; padding: 48px 0; }
+.about-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.about-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--accent); }
+.about-title { font-size: clamp(28px, 5vw, 46px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px; }
+.about-title span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.about-desc { font-size: 15px; color: var(--text2); line-height: 1.75; margin-bottom: 32px; max-width: 520px; }
+.trained-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 28px; display: flex; align-items: flex-start; gap: 14px; }
+.trained-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--mono); margin-bottom: 8px; }
+.trained-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.trained-tag { font-size: 11px; padding: 4px 12px; border-radius: 20px; background: rgba(108,143,255,0.1); border: 1px solid rgba(108,143,255,0.2); color: var(--accent); }
+.feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 32px; }
+.feat { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; transition: border-color 0.2s, transform 0.2s; }
+.feat:hover { border-color: var(--border2); transform: translateY(-2px); }
+.feat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.fi-blue { background: rgba(108,143,255,0.12); } .fi-purple { background: rgba(167,139,250,0.12); }
+.fi-green { background: rgba(52,211,153,0.12); } .fi-amber { background: rgba(251,191,36,0.12); }
+.fi-teal { background: rgba(45,212,191,0.12); } .fi-red { background: rgba(248,113,113,0.12); }
+.feat h3 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.feat p { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.cta { display: inline-flex; align-items: center; gap: 10px; padding: 14px 32px; border-radius: 30px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: white; font-family: var(--font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 30px rgba(108,143,255,0.3); }
+.cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,143,255,0.4); }
+
+/* CHAT */
+#chat { z-index: 7; background: var(--bg); justify-content: flex-start; align-items: stretch; }
+.chat-wrap { display: flex; flex-direction: column; height: 100vh; max-width: 860px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
+.chat-header { display: flex; align-items: center; gap: 12px; padding: 16px 24px; background: rgba(10,12,18,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.back-btn { width: 34px; height: 34px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.back-btn:hover { border-color: var(--accent); }
+.ch-avatar-wrap { position: relative; flex-shrink: 0; }
+.ch-avatar { width: 42px; height: 42px; border-radius: 13px; background: linear-gradient(135deg, #1a2240, #2a3470); border: 1px solid rgba(108,143,255,0.3); display: flex; align-items: center; justify-content: center; }
+.ch-dot { position: absolute; bottom: -2px; right: -2px; width: 11px; height: 11px; border-radius: 50%; background: var(--green); border: 2px solid var(--bg); animation: dotPulse 2s infinite; }
+@keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); } 50% { box-shadow: 0 0 0 5px rgba(52,211,153,0); } }
+.ch-info { flex: 1; }
+.ch-name { font-size: 14px; font-weight: 600; }
+.ch-status { font-size: 11px; color: var(--green); margin-top: 1px; }
+.ch-badge { font-family: var(--mono); font-size: 9px; font-weight: 700; background: rgba(108,143,255,0.1); color: var(--accent); border: 1px solid rgba(108,143,255,0.2); padding: 4px 10px; border-radius: 20px; letter-spacing: 0.06em; }
+.ch-disc { padding: 7px 24px; flex-shrink: 0; background: rgba(248,113,113,0.05); border-bottom: 1px solid rgba(248,113,113,0.1); display: flex; align-items: center; gap: 8px; }
+.ch-disc svg { width: 12px; height: 12px; flex-shrink: 0; }
+.ch-disc p { font-size: 11px; color: var(--text3); }
+.ch-disc span { color: var(--red); font-weight: 500; }
+.messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+.time-sep { text-align: center; font-family: var(--mono); font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 10px; }
+.time-sep::before, .time-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.msg-row { display: flex; gap: 10px; align-items: flex-end; }
+.msg-row.user { flex-direction: row-reverse; }
+
+/* Person avatar in chat */
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #6c8fff, #a78bfa);
+  border: 2px solid rgba(108,143,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: white;
+  position: relative; overflow: hidden;
+}
+/* Illustrated person face inside avatar */
+.user-avatar::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: 
+    radial-gradient(circle at 50% 38%, #f5c5a3 0%, #f5c5a3 28%, transparent 29%),
+    radial-gradient(circle at 50% 75%, #f5c5a3 0%, #f5c5a3 35%, transparent 36%),
+    linear-gradient(135deg, #6c8fff, #a78bfa);
+}
+.user-avatar::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 5px;
+  background: #8b6b4a;
+  border-radius: 50% 50% 0 0;
+  top: 8px; left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 -4px 0 4px #8b6b4a;
+}
+
+.bot-avatar { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; background: linear-gradient(135deg, #1a2240, #2a3470); border: 1px solid rgba(108,143,255,0.25); display: flex; align-items: center; justify-content: center; }
+.msg-body { max-width: 70%; display: flex; flex-direction: column; gap: 4px; }
+.msg-row.user .msg-body { align-items: flex-end; }
+.bubble { padding: 12px 16px; font-size: 14px; line-height: 1.65; border-radius: 18px; animation: msgIn 0.3s ease; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.bubble.bot { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+.bubble.user { background: linear-gradient(135deg, #6c8fff, #a78bfa); border-bottom-right-radius: 4px; color: white; }
+.src-pill { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: rgba(108,143,255,0.08); border: 1px solid rgba(108,143,255,0.15); border-radius: 8px; padding: 6px 10px; }
+.src-pill svg { width: 11px; height: 11px; flex-shrink: 0; }
+.src-pill span { font-size: 11px; color: var(--text2); }
+.src-pill strong { color: var(--accent); }
+.msg-time { font-size: 10px; color: var(--text3); font-family: var(--mono); padding: 0 4px; }
+.typing-row { display: flex; gap: 10px; align-items: flex-end; }
+.typing-row.hidden { display: none; }
+.typing-dots { padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 4px; display: flex; gap: 5px; align-items: center; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: dotBounce 1.2s ease-in-out infinite; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce { 0%,60%,100% { transform: translateY(0); background: var(--text3); } 30% { transform: translateY(-8px); background: var(--accent); } }
+.sugs { padding: 0 24px 10px; display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.sug { font-size: 12px; color: var(--text2); font-family: var(--font); background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 6px 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.sug:hover { background: rgba(108,143,255,0.1); border-color: rgba(108,143,255,0.3); color: var(--accent); }
+.input-area { padding: 12px 24px 20px; flex-shrink: 0; background: rgba(10,12,18,0.92); backdrop-filter: blur(20px); border-top: 1px solid var(--border); }
+.input-box { display: flex; gap: 10px; align-items: flex-end; background: var(--surface); border: 1px solid var(--border2); border-radius: 18px; padding: 10px 10px 10px 18px; transition: border-color 0.2s, box-shadow 0.2s; }
+.input-box:focus-within { border-color: rgba(108,143,255,0.4); box-shadow: 0 0 0 3px rgba(108,143,255,0.07); }
+textarea { flex: 1; background: none; border: none; outline: none; font-family: var(--font); font-size: 14px; color: var(--text); resize: none; line-height: 1.5; max-height: 100px; }
+textarea::placeholder { color: var(--text3); }
+.send-btn { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: white; }
+.send-btn:hover { transform: scale(1.06); }
+.send-btn:active { transform: scale(0.96); }
+.input-foot { margin-top: 8px; text-align: center; font-size: 10px; color: var(--text3); }
+.input-foot a { color: var(--red); text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<!-- SPLASH -->
+<div class="screen active" id="splash">
+  <div class="splash-logo">
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+      <rect x="4" y="4" width="36" height="36" rx="10" fill="rgba(108,143,255,0.15)" stroke="#6c8fff" stroke-width="1.5"/>
+      <path d="M22 12v20M12 22h20" stroke="#6c8fff" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="22" cy="22" r="6" fill="rgba(108,143,255,0.15)" stroke="#a78bfa" stroke-width="1"/>
+    </svg>
+  </div>
+  <div class="splash-title">MediAssist AI</div>
+  <div class="splash-sub">Your intelligent medical information assistant</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  <div class="splash-version">VERSION 1.0 · MEDIASSIST</div>
+</div>
+
+<!-- EMERGENCY -->
+<div class="screen" id="emergency">
+  <div class="emergency-ring">
+    <div class="ring ring1"></div><div class="ring ring2"></div><div class="ring ring3"></div>
+    <div class="emergency-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a2 2 0 01-.02-2.18V5.68A2 2 0 014.9 3.72L6.27 3.4A2 2 0 018.4 4.62l.7 2.81a2 2 0 01-.45 2.11L7.37 10.8a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45l2.81.7a2 2 0 011.22 2.12z"/>
+      </svg>
+    </div>
+  </div>
+  <div class="emergency-number">112</div>
+  <div class="emergency-label">Emergency Helpline · Available 24/7</div>
+  <div class="emergency-desc">MediAssist AI provides <strong>health information only</strong>.<br>In case of a medical emergency or life-threatening symptoms,<br><strong>call 112 immediately.</strong></div>
+  <button class="skip-btn" onclick="goTo('about')">I understand, continue →</button>
+</div>
+
+<!-- ABOUT -->
+<div class="screen" id="about" style="padding:0 24px; overflow-y:auto; justify-content:flex-start; align-items:center;">
+  <div class="about-wrap">
+    <div class="about-eyebrow">What is MediAssist</div>
+    <h1 class="about-title">Your AI-Powered<br><span>Medical Information</span><br>Assistant</h1>
+    <p class="about-desc">MediAssist uses advanced AI trained on verified medical literature to help you understand health conditions, symptoms, medications, and treatment options — instantly and clearly.</p>
+
+    <div class="trained-box">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="1.5" style="flex-shrink:0;margin-top:4px"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <div>
+        <div class="trained-label">Trained on verified sources</div>
+        <div class="trained-tags">
+          <span class="trained-tag">Gale Encyclopedia of Medicine</span>
+          <span class="trained-tag">Clinical Guidelines</span>
+          <span class="trained-tag">Medical Literature</span>
+          <span class="trained-tag">Symptom Databases</span>
+          <span class="trained-tag">Drug References</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat"><div class="feat-icon fi-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><h3>Symptom Lookup</h3><p>Understand what your symptoms might indicate</p></div>
+      <div class="feat"><div class="feat-icon fi-purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg></div><h3>Condition Info</h3><p>Detailed explanations of medical conditions</p></div>
+      <div class="feat"><div class="feat-icon fi-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM12 8v8M8 12h8"/></svg></div><h3>Treatment Options</h3><p>Learn about common treatment approaches</p></div>
+      <div class="feat"><div class="feat-icon fi-amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><h3>Instant Answers</h3><p>Clear responses in seconds, anytime</p></div>
+      <div class="feat"><div class="feat-icon fi-teal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Verified Sources</h3><p>All answers cite credible medical references</p></div>
+      <div class="feat"><div class="feat-icon fi-red"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div><h3>Patient-Focused</h3><p>Designed for clarity, not clinical jargon</p></div>
+    </div>
+
+    <button class="cta" onclick="goTo('chat')">
+      Start Chatting
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="chat" style="justify-content:flex-start; align-items:stretch;">
+  <div class="blobs" style="z-index:0;"><div class="blob b1" style="opacity:0.05;"></div><div class="blob b2" style="opacity:0.05;"></div></div>
+  <div class="chat-wrap">
+
+    <div class="chat-header">
+      <div class="back-btn" onclick="goTo('about')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </div>
+      <div class="ch-avatar-wrap">
+        <div class="ch-avatar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8" stroke-linecap="round" stroke-width="2"/></svg>
+        </div>
+        <div class="ch-dot"></div>
+      </div>
+      <div class="ch-info">
+        <div class="ch-name">MediAssist AI</div>
+        <div class="ch-status">● Online · Instant responses</div>
+      </div>
+      <div class="ch-badge">AI-POWERED</div>
+    </div>
+
+    <div class="ch-disc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p>Information only, not medical advice. <span>Call 112 for emergencies.</span></p>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="time-sep">Today · Session started</div>
+      <div class="msg-row">
+        <div class="bot-avatar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8" stroke-linecap="round" stroke-width="2"/></svg>
+        </div>
+        <div class="msg-body">
+          <div class="bubble bot">
+            Hi there! 👋 I'm <strong>MediAssist AI</strong>. Ask me anything about symptoms, conditions, medications, or treatments.<br><br>
+            <em style="font-size:12px;color:var(--text2);">I provide information only — always consult your doctor for personal medical advice.</em>
+          </div>
+          <span class="msg-time" id="init-time"></span>
+        </div>
+      </div>
+      <div class="typing-row hidden" id="typing">
+        <div class="bot-avatar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8" stroke-linecap="round" stroke-width="2"/></svg>
+        </div>
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div class="sugs" id="sugs">
+      <button class="sug" onclick="useSug(this)">What is diabetes?</button>
+      <button class="sug" onclick="useSug(this)">Symptoms of hypertension</button>
+      <button class="sug" onclick="useSug(this)">How does acne form?</button>
+      <button class="sug" onclick="useSug(this)">Thyroid disorder explained</button>
+    </div>
+
+    <div class="input-area">
+      <div class="input-box">
+        <textarea id="userInput" rows="1" placeholder="Ask a medical question…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="input-foot">Medical emergency? <a href="tel:112">Call 112</a> immediately &nbsp;·&nbsp; MediAssist does not replace professional medical care</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','exit'));
+  document.getElementById(id).classList.add('active');
+}
+window.addEventListener('load', () => {
+  document.getElementById('init-time').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  setTimeout(() => goTo('emergency'), 3400);
+});
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function useSug(btn) { document.getElementById('userInput').value=btn.textContent; sendMessage(); }
+function getTime() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function userAvatarHTML() {
+  return `<div class="user-avatar"></div>`;
+}
+
+function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if(!text) return;
+  const msgs = document.getElementById('messages');
+  const typing = document.getElementById('typing');
+  const userDiv = document.createElement('div');
+  userDiv.className = 'msg-row user';
+  userDiv.innerHTML = `
+    ${userAvatarHTML()}
+    <div class="msg-body">
+      <div class="bubble user">${esc(text)}</div>
+      <span class="msg-time">${getTime()} · Sent</span>
+    </div>`;
+  msgs.insertBefore(userDiv, typing);
+  inp.value=''; inp.style.height='auto';
+  document.getElementById('sugs').style.display='none';
+  typing.classList.remove('hidden');
+  scroll();
+  fetch('/get',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'msg='+encodeURIComponent(text)})
+  .then(r=>r.text()).then(reply=>{
+    typing.classList.add('hidden');
+    const botDiv = document.createElement('div');
+    botDiv.className='msg-row';
+    botDiv.innerHTML=`
+      <div class="bot-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M12 8v8M8 12h8" stroke-linecap="round" stroke-width="2"/></svg></div>
+      <div class="msg-body">
+        <div class="bubble bot">
+          ${esc(reply)}
+          <div class="src-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#6c8fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span><strong>Source:</strong> Medical Knowledge Base · Verify with your physician</span>
+          </div>
+        </div>
+        <span class="msg-time">${getTime()}</span>
+      </div>`;
+    msgs.insertBefore(botDiv, typing);
+    scroll();
+  }).catch(()=>{
+    typing.classList.add('hidden');
+    const e=document.createElement('div'); e.className='msg-row';
+    e.innerHTML=`<div class="bot-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="msg-body"><div class="bubble bot" style="border-color:rgba(248,113,113,0.2)">Connection issue. Please try again.</div><span class="msg-time">${getTime()}</span></div>`;
+    msgs.insertBefore(e,typing); scroll();
+  });
+}
+function scroll() { const m=document.getElementById('messages'); setTimeout(()=>m.scrollTop=m.scrollHeight,60); }
+</script>
+</body>
+</html>
